@@ -17,7 +17,6 @@ async function Authorize(req, res, next){
         }
     }
     catch(err){
-        console.log(err.message)
         return res.status(403).json({"detail": "User Not Authorised, Please Login"})
     }
 }
