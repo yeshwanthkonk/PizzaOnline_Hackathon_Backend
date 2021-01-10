@@ -9,6 +9,7 @@ async function Authorize(req, res, next){
         let valid = await jwt.verify(req.headers.authorization, process.env.CODE);
         if(valid){
             req.body["user_id"] = object_id(valid["user_id"]);
+            req.body["email"] = valid["email"];
             next();
         }
         else{
@@ -16,6 +17,7 @@ async function Authorize(req, res, next){
         }
     }
     catch(err){
+        console.log(err.message)
         return res.status(403).json({"detail": "User Not Authorised, Please Login"})
     }
 }

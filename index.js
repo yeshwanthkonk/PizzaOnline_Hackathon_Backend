@@ -5,8 +5,7 @@ const jwt = require('jsonwebtoken')
 const cors = require("cors")
 const randomstring = require("randomstring")
 require('dotenv').config()
-// const { Razorpay } = require("razorpay")
-// console.log(Razorpay)
+const Razorpay = require("razorpay")
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,10 +20,10 @@ var {transporter, reset_mail_detail, reset_email_template, activate_mail_detail,
 app.use(express.json());
 app.use(cors());
 
-// let payment = new Razorpay({
-//     key_id:process.env.key_id,
-//     key_secret:process.env.key_secret,
-// })
+const payment = new Razorpay({
+    key_id:process.env.key_id,
+    key_secret:process.env.key_secret,
+});
 
 app.post("/new_user", async (req, res)=>{
     let data = req.body;
@@ -63,6 +62,7 @@ app.post("/login", async (req, res)=>{
         if(result.length == 0){
             return res.status(401).json({"detail": "User Not Register"});
         }
+        let name = result[0]["name"]
         let isValid = await bcrypt.compare(data["password"], result[0]["password"]);
         if(!isValid){
             return res.status(401).json({"detail": "Invalid Credentials"});
@@ -72,7 +72,7 @@ app.post("/login", async (req, res)=>{
         }
         let token = await jwt.sign({"user_id": result[0]["_id"], "email": result[0]["email"]}, process.env.CODE, {expiresIn: "1h"})
         if(token)
-            return res.status(200).json({"detail": "Success", "token": token})
+            return res.status(200).json({"detail": "Success", "token": token, "name": name})
         else
             return res.status(500).json({"detail": "Some Error Occured"})
     } catch (error) {
@@ -237,8 +237,68 @@ app.get("/pizza_list", async (req, res)=>{
     return res.status(200).json(result);
 })
 
-app.post("/payment", async (req, res)=>{
-    payment.orders.create()
+app.post("/payment", Authorize, async (req, res)=>{
+    let data = req.body;
+    let client  = await mongoClient.connect(mongodb_url);
+    let collection = client.db(db).collection('receipts');
+    let response = await collection.insertOne({"email": data["email"], "price": data["price"], "currency":data["currency"]});
+    data = {"amount": data["price"], "currency": data["currency"], "receipt": String(response["insertedId"]), "payment_capture": "1"}
+    payment.orders.create(data).then((detail)=>{
+        console.log(detail);
+        res.status(200).json(detail);
+    }).catch((error)=>{
+        console.log(error)
+        res.status(400).json({error});
+    })
+})
+
+app.post("/orders", Authorize, async (req, res)=>{
+    let data = req.body;
+    data["ordered_date"] = new Date();
+    data["item_id"] = object_id(data["item_id"])
+    data["status"] = "Under Progress"
+    let client  = await mongoClient.connect(mongodb_url);
+    let collection = client.db(db).collection('orders');
+    let response = await collection.insertOne(data);
+    res.status(200).json({detail:"Order Created"});
+})
+
+app.get("/orders_list", Authorize, async (req, res)=>{
+    let data = req.body;
+    let client  = await mongoClient.connect(mongodb_url);
+    let collection = client.db(db).collection('orders');
+    let result = await collection.aggregate([
+        {
+            $match:{"user_id": data["user_id"]}
+        },
+        {
+            $sort:
+                {
+                    "ordered_date": -1,
+                }
+        },
+        {
+            $lookup:
+            {
+              from: 'pizzas',
+              localField: 'item_id',
+              foreignField: '_id',
+              as: 'pizzas'
+            }
+        },
+        {
+            $project:
+                {
+                    "name": {$arrayElemAt: ["$pizzas.name", 0]},
+                    "desc": {$arrayElemAt: ["$pizzas.desc", 0]},
+                    "price": {$arrayElemAt: ["$pizzas.price", 0]},
+                    "image": {$arrayElemAt: ["$pizzas.image", 0]},
+                    "ordered_date": 1,
+                    "status": 1,
+                }
+        }
+    ]).toArray();
+    res.status(200).json(result);
 })
 
 app.listen(port, ()=>console.log(`Server Started on Port-${port}`))
