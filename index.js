@@ -47,7 +47,6 @@ app.post("/new_user", async (req, res)=>{
         else
             return res.status(500).json({"detail": "Some Error Occured"})
     } catch (error) {
-        console.log(error);
         return res.status(500).json({"detail": "Some Exception Occured"})
     }
 })
@@ -76,7 +75,6 @@ app.post("/login", async (req, res)=>{
         else
             return res.status(500).json({"detail": "Some Error Occured"})
     } catch (error) {
-        console.log(error);
         return res.status(500).json({"detail": "Some Exception Occured"})
     }
 })
@@ -128,7 +126,6 @@ app.post("/reset_link", async (req, res)=>{
         return res.status(200).json({"detail":"Updated Email link Sent"})
     }
     catch(error){
-        console.log(error);
         return res.status(500).json({"detail": "Some Error Occured"})
     }
 })
@@ -178,7 +175,6 @@ app.post("/activate_link", async (req, res)=>{
         return res.status(200).json({"detail":"Updated Email link Sent"})
     }
     catch(error){
-        console.log(error);
         return res.status(500).json({"detail": "Some Error Occured"})
     }
 })
@@ -225,7 +221,6 @@ app.post("/update_password", async (req, res)=>{
         return res.status(200).json({"detail": "Success"})
     }
     catch(error){
-        console.log(error);
         return res.status(500).json({"detail": "Something Went Wrong"})
     }
 })
@@ -244,10 +239,8 @@ app.post("/payment", Authorize, async (req, res)=>{
     let response = await collection.insertOne({"email": data["email"], "price": data["price"], "currency":data["currency"]});
     data = {"amount": data["price"], "currency": data["currency"], "receipt": String(response["insertedId"]), "payment_capture": "1"}
     payment.orders.create(data).then((detail)=>{
-        console.log(detail);
         res.status(200).json(detail);
     }).catch((error)=>{
-        console.log(error)
         res.status(400).json({error});
     })
 })
