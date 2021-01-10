@@ -11,7 +11,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const mongoClient = mongodb.MongoClient;
 const object_id = mongodb.ObjectID;
-const mongodb_url = "mongodb://127.0.0.1:27017/"; //process.env.mongo_url;
+const mongodb_url = process.env.mongo_url;
 const db = "pizza_order_hackathon";
 const { Authorize, Edit_check, Delete_check } = require("./auth_lib/authorize")
 
