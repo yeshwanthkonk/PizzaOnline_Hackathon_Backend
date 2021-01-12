@@ -175,6 +175,8 @@ app.post("/activate_link", async (req, res)=>{
         return res.status(200).json({"detail":"Updated Email link Sent"})
     }
     catch(error){
+        console.log(error.message)
+        console.log(error)
         return res.status(500).json({"detail": "Some Error Occured"})
     }
 })
