@@ -134,12 +134,16 @@ app.get("/reset_link/:id", async (req, res)=>{
     let data = {"link_id": req.params["id"]};
     let client  = await mongoClient.connect(mongodb_url);
     let collection = client.db(db).collection('email_links');
-    let result = await collection.find(data).toArray();
-    client.close();
+    let result = await collection.find(data).toArray()
     if(result.length == 0){
+        client.close();
         return res.redirect(process.env.frontend_host+"forgot_password?q='Invalid Link'")
     }
     else{
+        await collection.deleteOne(data);
+        collection = client.db(db).collection('users');
+        await collection.findOneAndUpdate({"email": result[0]["email"]},{$set:{"verified": true}});
+        client.close();
         return res.redirect(process.env.frontend_host+`reset_password?id=${data["link_id"]}`)
     }
 })
@@ -175,8 +179,6 @@ app.post("/activate_link", async (req, res)=>{
         return res.status(200).json({"detail":"Updated Email link Sent"})
     }
     catch(error){
-        console.log(error.message)
-        console.log(error)
         return res.status(500).json({"detail": "Some Error Occured"})
     }
 })
