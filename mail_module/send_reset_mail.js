@@ -3,11 +3,14 @@ const smtpTransport = require("nodemailer-smtp-transport");
 
 var transporter = nodemailer.createTransport(smtpTransport({
     service: 'gmail',
-    host: 'smtp.gmail.com',
     auth: {
-      user: 'yeshwanth.apis@gmail.com',
-      pass: process.env.email_token
-    }
+        type: "OAuth2",
+        user: "yeshwanth.apis@gmail.com", 
+        clientId: process.env.client_id,
+        clientSecret: process.env.client_secret,
+        refreshToken: process.env.refresh_token,
+        accessToken: ""
+      }
 }));
 
 var reset_mail_detail = {
